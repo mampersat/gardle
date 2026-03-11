@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌱 Gardle — Daily Garden Challenge</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap');
+
+  :root {
+    --soil: #3d2b1f;
+    --soil-light: #5c4033;
+    --soil-dark: #2a1a10;
+    --grass: #4a7c3f;
+    --grass-light: #6aab5a;
+    --weed: #b5451b;
+    --weed-light: #e05c2a;
+    --harvest: #d4a017;
+    --harvest-light: #f0c040;
+    --empty: #6b4f3a;
+    --parchment: #f5ecd7;
+    --parchment-dark: #e8d5b0;
+    --ink: #2a1a10;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background-color: #1a2e1a;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, #243d24 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 80%, #1f2b1f 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: 'Crimson Pro', Georgia, serif;
+    color: var(--parchment);
+    padding: 20px 16px 40px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .title {
+    font-family: 'Abril Fatface', serif;
+    font-size: clamp(2.8rem, 8vw, 4.5rem);
+    color: var(--grass-light);
+    text-shadow: 3px 3px 0 var(--soil-dark), 0 0 30px rgba(106,171,90,0.3);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+
+  .subtitle {
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--parchment-dark);
+    opacity: 0.8;
+    margin-top: 4px;
+  }
+
+  .date-badge {
+    display: inline-block;
+    background: var(--soil);
+    border: 1px solid var(--soil-light);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.85rem;
+    color: var(--parchment-dark);
+    margin-top: 8px;
+    letter-spacing: 1px;
+  }
+
+  .game-container {
+    background: var(--soil-dark);
+    border: 2px solid var(--soil-light);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .stats-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 8px;
+  }
+
+  .stat-box {
+    flex: 1;
+    background: var(--soil);
+    border-radius: 10px;
+    padding: 10px 8px;
+    text-align: center;
+    border: 1px solid var(--soil-light);
+  }
+
+  .stat-value {
+    font-family: 'Abril Fatface', serif;
+    font-size: 1.8rem;
+    color: var(--grass-light);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    color: var(--parchment-dark);
+    opacity: 0.7;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* Garden Grid */
+  .garden-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .plot {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .plot:hover:not(.disabled) {
+    transform: scale(1.05);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+
+  .plot:active:not(.disabled) { transform: scale(0.97); }
+
+  .plot.empty {
+    background: var(--empty);
+    border-color: #7d6050;
+  }
+
+  .plot.planted {
+    background: linear-gradient(135deg, #3a5e2a, #4a7a38);
+    border-color: var(--grass);
+    animation: plantPulse 2s ease-in-out infinite;
+  }
+
+  .plot.weedy {
+    background: linear-gradient(135deg, #6b2010, #8b3015);
+    border-color: var(--weed);
+  }
+
+  .plot.harvestable {
+    background: linear-gradient(135deg, #8a6010, #b08020);
+    border-color: var(--harvest);
+    animation: harvestGlow 1.5s ease-in-out infinite;
+  }
+
+  .plot.harvested {
+    background: var(--soil);
+    border-color: var(--soil-light);
+    opacity: 0.7;
+    cursor: default;
+  }
+
+  .plot.disabled { cursor: default; }
+
+  @keyframes plantPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(74,122,56,0.3); }
+    50% { box-shadow: 0 0 16px rgba(74,122,56,0.6); }
+  }
+
+  @keyframes harvestGlow {
+    0%, 100% { box-shadow: 0 0 8px rgba(212,160,23,0.4); }
+    50% { box-shadow: 0 0 20px rgba(212,160,23,0.8); }
+  }
+
+  .plot-emoji { font-size: clamp(1.4rem, 4vw, 1.8rem); line-height: 1; }
+  .plot-day { font-size: 0.6rem; color: rgba(255,255,255,0.6); margin-top: 2px; }
+
+  /* Day info */
+  .day-info {
+    background: var(--soil);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--soil-light);
+  }
+
+  .day-title {
+    font-family: 'Abril Fatface', serif;
+    font-size: 1.1rem;
+    color: var(--harvest-light);
+  }
+
+  .day-desc {
+    font-size: 0.95rem;
+    color: var(--parchment-dark);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  /* Actions */
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px 8px;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .action-btn .btn-icon { font-size: 1.3rem; }
+  .action-btn .btn-label { font-size: 0.72rem; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  .action-btn.active {
+    transform: scale(1.04);
+    box-shadow: 0 0 0 2px white;
+  }
+
+  .btn-plant { background: #2d4f22; border-color: var(--grass); color: var(--grass-light); }
+  .btn-plant:hover, .btn-plant.active { background: #3a6b2d; }
+
+  .btn-weed { background: #4a1a0a; border-color: var(--weed); color: #f08060; }
+  .btn-weed:hover, .btn-weed.active { background: #6a2a10; }
+
+  .btn-harvest { background: #4a3a00; border-color: var(--harvest); color: var(--harvest-light); }
+  .btn-harvest:hover, .btn-harvest.active { background: #6a5200; }
+
+  .btn-nextday {
+    width: 100%;
+    padding: 14px;
+    border-radius: 10px;
+    border: 2px solid var(--grass);
+    background: var(--grass);
+    color: white;
+    font-family: 'Abril Fatface', serif;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+
+  .btn-nextday:hover { background: var(--grass-light); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(74,124,63,0.4); }
+  .btn-nextday:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    color: var(--parchment-dark);
+    opacity: 0.8;
+  }
+
+  /* Results / Share */
+  .results-panel {
+    display: none;
+    background: var(--parchment);
+    color: var(--ink);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .results-panel.visible { display: block; }
+
+  .results-title {
+    font-family: 'Abril Fatface', serif;
+    font-size: 1.8rem;
+    color: var(--grass);
+    margin-bottom: 4px;
+  }
+
+  .results-subtitle {
+    font-style: italic;
+    font-size: 1rem;
+    color: #5c4033;
+    margin-bottom: 16px;
+  }
+
+  .share-grid {
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    line-height: 1.6;
+    margin: 12px 0;
+    font-family: monospace;
+  }
+
+  .share-text-box {
+    background: #f0e6cc;
+    border: 1px solid #c8b080;
+    border-radius: 8px;
+    padding: 12px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    text-align: left;
+    white-space: pre-wrap;
+    color: var(--ink);
+    margin: 12px 0;
+    word-break: break-word;
+  }
+
+  .btn-share {
+    background: var(--grass);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 28px;
+    font-family: 'Abril Fatface', serif;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    margin: 4px;
+    letter-spacing: 1px;
+  }
+
+  .btn-share:hover { background: var(--grass-light); transform: translateY(-1px); }
+  .btn-share.copied { background: var(--harvest); }
+
+  .score-big {
+    font-family: 'Abril Fatface', serif;
+    font-size: 3rem;
+    color: var(--harvest);
+    line-height: 1;
+  }
+
+  .score-label { font-size: 0.9rem; color: #7a5a3a; margin-bottom: 8px; }
+
+  /* Message toast */
+  .toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-60px);
+    background: var(--soil-dark);
+    color: var(--parchment);
+    padding: 10px 20px;
+    border-radius: 20px;
+    border: 1px solid var(--grass);
+    font-size: 0.95rem;
+    z-index: 100;
+    transition: transform 0.3s ease;
+    white-space: nowrap;
+  }
+
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* Weed warning pulse */
+  .plot.weedy-urgent { animation: weedPulse 0.8s ease-in-out infinite; }
+
+  @keyframes weedPulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(181,69,27,0.4); }
+    50% { box-shadow: 0 0 20px rgba(181,69,27,0.9), 0 0 40px rgba(181,69,27,0.4); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">🌱 Gardle</div>
+  <div class="subtitle">The daily garden challenge</div>
+  <div class="date-badge" id="dateBadge">Loading...</div>
+</header>
+
+<div class="game-container">
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-value" id="statDay">1</div>
+      <div class="stat-label">Day</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="statHarvest">0</div>
+      <div class="stat-label">Harvested</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="statWeeds">0</div>
+      <div class="stat-label">Weeds Pulled</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value" id="statScore">0</div>
+      <div class="stat-label">Score</div>
+    </div>
+  </div>
+
+  <div class="day-info">
+    <div class="day-title" id="dayTitle">🌤 Day 1 — New Garden</div>
+    <div class="day-desc" id="dayDesc">Your garden plot awaits! Plant some seeds to get started. Crops take 3 days to mature.</div>
+  </div>
+
+  <div class="actions">
+    <button class="action-btn btn-plant active" id="btnPlant" onclick="setAction('plant')">
+      <span class="btn-icon">🌱</span>
+      <span class="btn-label">Plant</span>
+    </button>
+    <button class="action-btn btn-weed" id="btnWeed" onclick="setAction('weed')">
+      <span class="btn-icon">🌿</span>
+      <span class="btn-label">Weed</span>
+    </button>
+    <button class="action-btn btn-harvest" id="btnHarvest" onclick="setAction('harvest')">
+      <span class="btn-icon">🧺</span>
+      <span class="btn-label">Harvest</span>
+    </button>
+  </div>
+
+  <div class="garden-grid" id="gardenGrid"></div>
+
+  <button class="btn-nextday" id="btnNextDay" onclick="nextDay()">End Day →</button>
+
+  <div class="legend">
+    <div class="legend-item">🟫 Empty</div>
+    <div class="legend-item">🟩 Growing</div>
+    <div class="legend-item">🟥 Weedy!</div>
+    <div class="legend-item">🟨 Ready</div>
+    <div class="legend-item">⬛ Harvested</div>
+  </div>
+
+  <div class="results-panel" id="resultsPanel">
+    <div class="results-title">Garden Complete!</div>
+    <div class="results-subtitle" id="resultsSubtitle">Here's how your garden grew</div>
+    <div class="score-big" id="finalScore">0</div>
+    <div class="score-label">points</div>
+    <div class="share-grid" id="shareGrid"></div>
+    <div class="share-text-box" id="shareTextBox"></div>
+    <button class="btn-share" id="btnCopy" onclick="copyResults()">📋 Copy to Share</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── State ──────────────────────────────────────────────────────────────────
+  const GRID_SIZE = 5; // 5x5
+  const TOTAL_DAYS = 7;
+  const GROW_DAYS = 3;
+  const WEED_CHANCE_BASE = 0.15; // per empty/planted plot per day
+
+  // Plot states: 'empty' | 'planted' | 'weedy' | 'harvestable' | 'harvested'
+  let plots = [];
+  let currentDay = 1;
+  let currentAction = 'plant';
+  let totalHarvested = 0;
+  let totalWeedsPulled = 0;
+  let score = 0;
+  let gameOver = false;
+  let dayHistory = []; // array of grid snapshots per day for share emoji
+
+  // Daily seed for consistent weeds per game day
+  function seededRand(seed) {
+    let x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  }
+
+  function getTodaySeed() {
+    const d = new Date();
+    return d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+  }
+
+  function initGame() {
+    plots = Array.from({length: GRID_SIZE * GRID_SIZE}, () => ({
+      state: 'empty',
+      plantedDay: null,
+      daysWeedy: 0,
+    }));
+    currentDay = 1;
+    currentAction = 'plant';
+    totalHarvested = 0;
+    totalWeedsPulled = 0;
+    score = 0;
+    gameOver = false;
+    dayHistory = [];
+
+    // Set date badge
+    const d = new Date();
+    document.getElementById('dateBadge').textContent =
+      d.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+
+    renderGrid();
+    updateUI();
+    snapshotDay();
+  }
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  function setAction(action) {
+    currentAction = action;
+    document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn' + action.charAt(0).toUpperCase() + action.slice(1)).classList.add('active');
+  }
+
+  function clickPlot(idx) {
+    if (gameOver) return;
+    const plot = plots[idx];
+
+    if (currentAction === 'plant' && plot.state === 'empty') {
+      plot.state = 'planted';
+      plot.plantedDay = currentDay;
+      showToast('🌱 Planted a seed!');
+    } else if (currentAction === 'weed' && (plot.state === 'weedy')) {
+      plot.state = 'empty';
+      plot.daysWeedy = 0;
+      totalWeedsPulled++;
+      score += 5;
+      showToast('🌿 Weed pulled! +5pts');
+    } else if (currentAction === 'harvest' && plot.state === 'harvestable') {
+      const daysOld = currentDay - plot.plantedDay;
+      const pts = Math.max(10, 30 - (daysOld - GROW_DAYS) * 3);
+      score += pts;
+      totalHarvested++;
+      plot.state = 'harvested';
+      plot.plantedDay = null;
+      showToast(`🧺 Harvested! +${pts}pts`);
+    } else if (currentAction === 'plant' && plot.state !== 'empty') {
+      showToast('This plot isn\'t empty!');
+    } else if (currentAction === 'weed' && plot.state !== 'weedy') {
+      showToast('No weeds here to pull.');
+    } else if (currentAction === 'harvest' && plot.state !== 'harvestable') {
+      showToast('Not ready to harvest yet.');
+    }
+
+    renderGrid();
+    updateStats();
+  }
+
+  // ── Day Advancement ────────────────────────────────────────────────────────
+  function nextDay() {
+    if (gameOver) return;
+
+    // Check for harvestable crops that weren't harvested (penalty)
+    plots.forEach(p => {
+      if (p.state === 'harvestable') {
+        score = Math.max(0, score - 2); // small penalty for leaving ripe crops
+      }
+    });
+
+    // Advance crops: planted → harvestable after GROW_DAYS
+    plots.forEach(p => {
+      if (p.state === 'planted' && (currentDay - p.plantedDay) >= GROW_DAYS) {
+        p.state = 'harvestable';
+      }
+    });
+
+    // Spawn weeds: random on empty/planted plots
+    const daySeed = getTodaySeed() * 100 + currentDay;
+    plots.forEach((p, i) => {
+      if (p.state === 'empty' || p.state === 'planted') {
+        const r = seededRand(daySeed + i * 17);
+        if (r < WEED_CHANCE_BASE + currentDay * 0.02) {
+          p.state = 'weedy';
+          p.daysWeedy = 1;
+        }
+      } else if (p.state === 'weedy') {
+        p.daysWeedy++;
+        if (p.daysWeedy >= 3) {
+          // Weed kills the crop / spreads — heavy penalty
+          score = Math.max(0, score - 8);
+          p.state = 'empty';
+          p.daysWeedy = 0;
+        }
+      }
+    });
+
+    snapshotDay();
+    currentDay++;
+
+    if (currentDay > TOTAL_DAYS) {
+      endGame();
+      return;
+    }
+
+    renderGrid();
+    updateUI();
+  }
+
+  function snapshotDay() {
+    dayHistory.push(plots.map(p => p.state));
+  }
+
+  // ── End Game ───────────────────────────────────────────────────────────────
+  function endGame() {
+    gameOver = true;
+
+    // Harvest bonus for remaining harvestable
+    plots.forEach(p => {
+      if (p.state === 'harvestable') {
+        score += 5;
+        totalHarvested++;
+        p.state = 'harvested';
+      }
+    });
+
+    document.getElementById('btnNextDay').disabled = true;
+    document.getElementById('resultsPanel').classList.add('visible');
+    document.getElementById('finalScore').textContent = score;
+
+    const rank = score >= 200 ? '🏆 Master Gardener' :
+                 score >= 140 ? '🌻 Green Thumb' :
+                 score >= 80  ? '🌿 Budding Grower' : '🪴 Keep Tending';
+    document.getElementById('resultsSubtitle').textContent = rank;
+
+    // Build share text
+    const shareText = buildShareText();
+    document.getElementById('shareTextBox').textContent = shareText;
+    document.getElementById('shareGrid').textContent = buildShareEmoji();
+
+    updateStats();
+  }
+
+  function buildShareEmoji() {
+    const emojiMap = {
+      empty: '🟫', planted: '🟩', weedy: '🟥', harvestable: '🟨',
+      harvested: '⬛', undefined: '⬜'
+    };
+    return dayHistory.map(day => {
+      let row = '';
+      for (let i = 0; i < GRID_SIZE; i++) {
+        row += emojiMap[day[i*5]] + emojiMap[day[i*5+1]] + emojiMap[day[i*5+2]] + emojiMap[day[i*5+3]] + emojiMap[day[i*5+4]];
+        if (i < GRID_SIZE - 1) row += '\n';
+      }
+      return row;
+    }).join('\n—\n');
+  }
+
+  function buildShareText() {
+    const d = new Date();
+    const dateStr = d.toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'});
+    const rank = score >= 200 ? 'Master Gardener 🏆' :
+                 score >= 140 ? 'Green Thumb 🌻' :
+                 score >= 80  ? 'Budding Grower 🌿' : 'Keep Tending 🪴';
+
+    const emojiMap = {
+      empty: '🟫', planted: '🟩', weedy: '🟥', harvestable: '🟨',
+      harvested: '⬛', undefined: '⬜'
+    };
+
+    let grid = '';
+    dayHistory.forEach((day, di) => {
+      grid += `Day ${di+1}: `;
+      grid += day.slice(0,5).map(s => emojiMap[s]).join('') + '\n';
+    });
+
+    return `🌱 Gardle — ${dateStr}\n` +
+           `Score: ${score} pts | ${rank}\n` +
+           `🧺 ${totalHarvested} harvested  🌿 ${totalWeedsPulled} weeds pulled\n\n` +
+           grid +
+           `\n🟫 Empty  🟩 Growing  🟥 Weedy  🟨 Ready  ⬛ Done\n` +
+           `Play at <a href="https://mampersat.com/gardle/">https://mampersat.com/gardle/</a>`;
+  }
+
+  function copyResults() {
+    const text = document.getElementById('shareTextBox').textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById('btnCopy');
+      btn.textContent = '✅ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '📋 Copy to Share';
+        btn.classList.remove('copied');
+      }, 2000);
+    }).catch(() => {
+      // fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Copied!');
+    });
+  }
+
+  // ── Rendering ──────────────────────────────────────────────────────────────
+  function renderGrid() {
+    const grid = document.getElementById('gardenGrid');
+    grid.innerHTML = '';
+    const cropEmojis = ['🥕','🥦','🍅','🌽','🥬','🫑','🍆','🫛'];
+    const seedForEmoji = getTodaySeed();
+
+    plots.forEach((plot, i) => {
+      const div = document.createElement('div');
+      div.className = `plot ${plot.state}${gameOver ? ' disabled' : ''}`;
+
+      // Add urgency class for weeds that have been there 2+ days
+      if (plot.state === 'weedy' && plot.daysWeedy >= 2) {
+        div.classList.add('weedy-urgent');
+      }
+
+      let emoji = '';
+      let dayLabel = '';
+
+      if (plot.state === 'empty') {
+        emoji = '🟫';
+      } else if (plot.state === 'planted') {
+        const cropIdx = Math.floor(seededRand(seedForEmoji + i) * cropEmojis.length);
+        emoji = cropEmojis[cropIdx];
+        const daysLeft = GROW_DAYS - (currentDay - plot.plantedDay);
+        dayLabel = daysLeft > 0 ? `${daysLeft}d` : 'soon';
+      } else if (plot.state === 'weedy') {
+        emoji = '🌿';
+        dayLabel = `${plot.daysWeedy}d`;
+      } else if (plot.state === 'harvestable') {
+        const cropIdx = Math.floor(seededRand(seedForEmoji + i) * cropEmojis.length);
+        emoji = cropEmojis[cropIdx];
+        dayLabel = 'ripe!';
+      } else if (plot.state === 'harvested') {
+        emoji = '✓';
+      }
+
+      div.innerHTML = `<span class="plot-emoji">${emoji}</span>${dayLabel ? `<span class="plot-day">${dayLabel}</span>` : ''}`;
+      div.onclick = () => clickPlot(i);
+      grid.appendChild(div);
+    });
+  }
+
+  function updateUI() {
+    // Day title / description
+    const titles = [
+      ['🌤 Day 1 — New Garden', 'Your plot awaits! Plant seeds to get started. Crops take 3 days to mature.'],
+      ['☀️ Day 2 — Seedlings', 'Keep planting! Watch for weeds starting to appear.'],
+      ['🌦 Day 3 — First Weeds', 'Weeds are sprouting. Pull them before they spread! First crops nearly ready.'],
+      ['🌿 Day 4 — Growing Season', 'Harvest what\'s ripe and keep those weeds in check.'],
+      ['⛅ Day 5 — Mid-Week', 'Weeds spread faster now. Don\'t let them sit more than 2 days!'],
+      ['🌧 Day 6 — Final Push', 'Last chance to plant anything. Weeds are aggressive today.'],
+      ['🌻 Day 7 — Harvest Day', 'Final day! Harvest everything you can before sundown.'],
+    ];
+    const [title, desc] = titles[Math.min(currentDay - 1, titles.length - 1)];
+    document.getElementById('dayTitle').textContent = title;
+    document.getElementById('dayDesc').textContent = desc;
+    document.getElementById('statDay').textContent = currentDay;
+    updateStats();
+  }
+
+  function updateStats() {
+    document.getElementById('statHarvest').textContent = totalHarvested;
+    document.getElementById('statWeeds').textContent = totalWeedsPulled;
+    document.getElementById('statScore').textContent = score;
+  }
+
+  // ── Toast ──────────────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // ── Boot ───────────────────────────────────────────────────────────────────
+  initGame();
+</script>
+</body>
+</html>
