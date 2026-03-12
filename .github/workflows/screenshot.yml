@@ -3,12 +3,7 @@ name: Screenshot
 
 on:
   push:
-    branches: [main]
-    paths:
-      - 'index.html'
-      - '.github/workflows/screenshot.yml'
-      - 'scripts/screenshot.mjs'
-      - 'package.json'
+    branches: [main, master]
   workflow_dispatch:
 
 permissions:

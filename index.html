@@ -323,6 +323,7 @@
     line-height: 1.6;
     margin: 12px 0;
     font-family: monospace;
+    white-space: pre-wrap;
   }
 
   .share-text-box {
@@ -637,9 +638,11 @@
                  score >= 80  ? '🌿 Budding Grower' : '🪴 Keep Tending';
     document.getElementById('resultsSubtitle').textContent = rank;
 
-    // Build share text
+    // Build share text (plain for clipboard); display with clickable URL
     const shareText = buildShareText();
-    document.getElementById('shareTextBox').textContent = shareText;
+    const url = 'https://mampersat.com/gardle/';
+    const displayHtml = escapeHtml(shareText).replace(escapeHtml(url), '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>');
+    document.getElementById('shareTextBox').innerHTML = displayHtml;
     document.getElementById('shareGrid').textContent = buildShareEmoji();
 
     updateStats();
@@ -650,14 +653,14 @@
       empty: '🟫', planted: '🟩', weedy: '🟥', harvestable: '🟨',
       harvested: '⬛', undefined: '⬜'
     };
-    return dayHistory.map(day => {
-      let row = '';
+    return dayHistory.map((day, di) => {
+      let row = `Day ${di + 1}\n`;
       for (let i = 0; i < GRID_SIZE; i++) {
         row += emojiMap[day[i*5]] + emojiMap[day[i*5+1]] + emojiMap[day[i*5+2]] + emojiMap[day[i*5+3]] + emojiMap[day[i*5+4]];
         if (i < GRID_SIZE - 1) row += '\n';
       }
       return row;
-    }).join('\n—\n');
+    }).join('\n\n');
   }
 
   function buildShareText() {
@@ -683,7 +686,15 @@
            `🧺 ${totalHarvested} harvested  🌿 ${totalWeedsPulled} weeds pulled\n\n` +
            grid +
            `\n🟫 Empty  🟩 Growing  🟥 Weedy  🟨 Ready  ⬛ Done\n` +
-           `Play at <a href="https://mampersat.com/gardle/">https://mampersat.com/gardle/</a>`;
+           `Play at https://mampersat.com/gardle/`;
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   function copyResults() {

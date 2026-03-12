@@ -2,9 +2,11 @@
   "name": "gardle",
   "private": true,
   "scripts": {
-    "screenshot": "node scripts/screenshot.mjs"
+    "screenshot": "node scripts/screenshot.mjs",
+    "preview": "browser-sync start --server . --files 'index.html' --port 5555 --no-open"
   },
   "devDependencies": {
+    "browser-sync": "^3.0.3",
     "puppeteer": "^23.0.0"
   }
 }
