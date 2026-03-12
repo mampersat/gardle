@@ -1,0 +1,10 @@
+{
+  "name": "gardle",
+  "private": true,
+  "scripts": {
+    "screenshot": "node scripts/screenshot.mjs"
+  },
+  "devDependencies": {
+    "puppeteer": "^23.0.0"
+  }
+}
