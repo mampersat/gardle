@@ -25,7 +25,7 @@ try {
   const page = await browser.newPage();
   await page.setViewport(VIEWPORT);
   await page.goto(`file://${indexPath}`, { waitUntil: 'networkidle0' });
-  await page.screenshot({ path: screenshotPath });
+  await page.screenshot({ path: screenshotPath, fullPage: true });
 } finally {
   await browser.close();
 }
